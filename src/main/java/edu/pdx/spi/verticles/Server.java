@@ -12,7 +12,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import static edu.pdx.spi.ChannelNames.*;
-import edu.pdx.spi.handlers.PatientsHandler;
+import edu.pdx.spi.handlers.*;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
@@ -53,6 +53,10 @@ public class Server extends AbstractVerticle {
     // Waveform stream endpoints
     router.route("/stream/waveform/:type/:id").handler(streamHandle);
 
+    // WebSockets endpoints
+    WatchWebSocketHandler webSocketHandle = new WatchWebSocketHandler();
+    //WatchHandler watchHttpHandle = new WatchHandler();
+    //router.route("/websocket/waveform/:type/:id").handler(watchHttpHandle);
     // Bridged eventbus permissions
     BridgeOptions options = new BridgeOptions();
     options.addOutboundPermitted(new PermittedOptions().setAddressRegex(".+\\..+"));
@@ -78,9 +82,10 @@ public class Server extends AbstractVerticle {
     }));
 
     vertx.createHttpServer()
-        .requestHandler(router::accept)
+        .requestHandler(router::accept)//normal http requests.
+        .websocketHandler(webSocketHandle)//needed for handling websocket requests.
         .listen(port, hostname);
-
+    
     System.out.println("Server started on " + hostname + ":" + port);
   }
 }
