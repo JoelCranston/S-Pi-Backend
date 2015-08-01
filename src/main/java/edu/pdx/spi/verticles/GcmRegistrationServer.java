@@ -29,11 +29,20 @@ public class GcmRegistrationServer extends AbstractVerticle {
                     @Override
                     public void handle(Buffer buffer) {
                         // save as string and close socket
-                        String regToken = buffer.getString(0, buffer.length());
+                        String cmd = buffer.getString(0, 4);
+                        System.out.println("GCM Command recieved: " + cmd); 
+                        String regToken = buffer.getString(4, buffer.length());
+                        System.out.println("GCM Token recieved: " + regToken);
                         sock.close();
-
+                        if(cmd.contains("STOP")){
+                            eb.send("stopGcmToken",regToken);
+                        }
+                        if(cmd.contains("STRT")){
                         // send registration token to alerts verticle
-                        eb.send("newGcmToken", regToken);
+                            eb.send("newGcmToken", regToken);
+                        }
+
+
 
                     }
                 });

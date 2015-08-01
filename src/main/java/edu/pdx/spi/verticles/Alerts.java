@@ -4,19 +4,14 @@ package edu.pdx.spi.verticles;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.pdx.spi.GcmContent;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.CorsHandler;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import io.vertx.core.json.JsonObject;
+import java.util.Random;
 
 
 public class Alerts extends AbstractVerticle {
@@ -44,38 +39,61 @@ public class Alerts extends AbstractVerticle {
       // handle new registration tokens from android app
       eb.consumer("newGcmToken", message -> {
           String userRegToken = message.body().toString();
-          System.out.println("Received New User Registration: " + userRegToken);
-
+          for(String s: userGcmRegistrationTokens){
+              if(s.contentEquals(userRegToken)){
+                  System.out.println("User already Registered: " + userRegToken);
+                  return;
+              }
+          }
           // add new token to list
-          userGcmRegistrationTokens.add(userRegToken);
+          System.out.println("Received New User Registration: " + userRegToken);
+          if(userRegToken != null){
+            userGcmRegistrationTokens.add(userRegToken);
+          }
       });
-
+      //handle registration stop messagages.
+      eb.consumer("stopGcmToken", message -> {
+          String userRegToken = message.body().toString();
+          for(int i = 0; i < userGcmRegistrationTokens.size();i++){
+              if(userGcmRegistrationTokens.get(i).contentEquals(userRegToken)){
+                  userGcmRegistrationTokens.remove(i);
+                  System.out.println("Removed User Registration: " + userRegToken);
+              }
+          }
+      });
+      
       // Sends a new alert every 20 seconds
       vertx.setPeriodic(interval, id -> {
-
-          // send message to each registered user
-          for (int i = 0; i < userGcmRegistrationTokens.size(); ++i) {
-              // create message to send to watch user
-              GcmContent content = createContent(userGcmRegistrationTokens.get(i));
-
-              // Send message to specified user
-              sendMessage(content, API_KEY);
+          
+          // create the content, should be from eventbus
+          if(userGcmRegistrationTokens.isEmpty()){
+              return;
           }
-
+          GcmContent content = createContent();
+          for(String t :userGcmRegistrationTokens){
+              content.addRegId(t);
+          }
+          // Send message to all the users
+          sendMessage(content, API_KEY);
     });
   }
 
     // creates message content to be sent to watch
-    public GcmContent createContent(String userToken){
-
+    public GcmContent createContent(){
+        Random rn;
+        rn = new Random(System.currentTimeMillis());
         GcmContent c = new GcmContent();
-
-        c.addRegId(userToken);
-        c.createData("SPI ALERT!", "***WATCH DEMO:This is the message section of the GCM message***");
-
-
+        JsonObject alert = new JsonObject();
+        alert.put("PATIENT_ID", rn.nextInt(4));
+        alert.put("TS", System.currentTimeMillis());
+        alert.put("SIGNAME", "ABP");
+        alert.put("INTERVAL", rn.nextInt(7));
+        alert.put("ALERT_MSG", "This is a Alert");
+        alert.put("ACTION_MSG", "Do something!");
+        c.createData("SPI ALERT",alert.toString()); //title,message
         return c;
     }
+    
     private void sendMessage(GcmContent content, String apiKey) {
         try{
 
