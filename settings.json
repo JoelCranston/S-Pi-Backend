@@ -1,6 +1,6 @@
 {
     "vertxHost": "localhost",
-    "vertxPort": 9999,
+    "vertxPort": 8080,
     "sstore": false,
     "sstoreClientHost": "localhost",
     "sstoreClientPort": 6000,

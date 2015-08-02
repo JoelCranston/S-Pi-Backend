@@ -69,7 +69,7 @@ public class Alerts extends AbstractVerticle {
           if(userGcmRegistrationTokens.isEmpty()){
               return;
           }
-          GcmContent content = createContent();
+          GcmContent content = createContent("message");
           for(String t :userGcmRegistrationTokens){
               content.addRegId(t);
           }
@@ -79,7 +79,7 @@ public class Alerts extends AbstractVerticle {
   }
 
     // creates message content to be sent to watch
-    public GcmContent createContent(){
+    public GcmContent createContent(String message){
         Random rn;
         rn = new Random(System.currentTimeMillis());
         GcmContent c = new GcmContent();

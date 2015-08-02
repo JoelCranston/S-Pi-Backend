@@ -7,7 +7,7 @@
   <version>0.1.1</version>
   <packaging>jar</packaging>
 
-  <name>s-pi</name>
+  <name>s-pi-local</name>
   <url>http://maven.apache.org</url>
 
   <properties>

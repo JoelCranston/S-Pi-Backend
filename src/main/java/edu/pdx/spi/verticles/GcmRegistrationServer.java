@@ -41,8 +41,9 @@ public class GcmRegistrationServer extends AbstractVerticle {
 //                        // send registration token to alerts verticle
 //                            eb.send("newGcmToken", regToken);
 //                        }
-                        
-
+                        //send responce.
+                        sock.write("Recieved");
+                        sock.close();    
                         String regToken = buffer.getString(0, buffer.length());
                         eb.send("newGcmToken", regToken);
 
