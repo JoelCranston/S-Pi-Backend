@@ -55,25 +55,36 @@ public class WatchAlertsSendServer extends AbstractVerticle {
       }
     });
 
-    eb.consumer(ALL_ALERTS, msg -> {
-      JsonObject m = (JsonObject) msg.body();
-      JsonArray data = m.getJsonArray("data");
+      eb.consumer(ALL_ALERTS, msg -> {
+          JsonObject m = (JsonObject) msg.body();
+          JsonArray data = m.getJsonArray("data");
+          //for each alert in the array create a gcm message
+          for (int i = 0; i < data.size(); i++) {
+              GcmContent content = createContent(data.getJsonObject(i).encode());
+              //one GcmContent can have multiple Registration tokens
+              for (String userGcmRegistrationToken : userGcmRegistrationTokens) {
+                  content.addRegId(userGcmRegistrationToken);
+              }
+              sendMessage(content, API_KEY);
+          }
 
-      for (String userGcmRegistrationToken : userGcmRegistrationTokens) {
-        GcmContent content = createContent(userGcmRegistrationToken, data.getJsonObject(0).encode());
-        sendMessage(content, API_KEY);
-      }
-    });
+      });
   }
 
   // creates message content to be sent to watch
-  public GcmContent createContent(String userToken, String message) {
+  public GcmContent createContent(String message) {
     GcmContent c = new GcmContent();
+    
+    //parse the json string to get the patient id
+    JsonObject alert = new JsonObject(message); 
+    //Get patient info
+    eb.send("patients", alert.getString("PATIENT_ID"), m -> {
+        JsonObject patient = new JsonObject((String)m.result().body());
+        alert.put("NAME", patient.getString("name", "Unknown Patient"));
+        alert.put("BED" , patient.getString("bed", "N/A"));
+        c.createData("SPI ALERT!", alert.encode());
+      });
 
-    c.addRegId(userToken);
-
-    //TODO: How does the watch want to consume this data?
-    c.createData("SPI ALERT!", message);
     return c;
   }
 
